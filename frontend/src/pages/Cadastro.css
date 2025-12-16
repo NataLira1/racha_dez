@@ -1,0 +1,85 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Open Sans", sans-serif;
+}
+
+.form-container {
+  display: grid;
+  justify-items: center;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, auto);
+  gap: 2.5rem 0;
+  max-width: 100%;
+  padding: 65px 0px;
+}
+
+.form-container label {
+  color: #0b53b8;
+  font-size: 20px;
+  font-weight: 500;
+  margin-bottom: 10px;
+}
+
+.form-container input,
+select {
+  padding: 15px;
+  background-color: #eeeeee;
+  border: solid #a9a9a9 1px;
+  border-radius: 10px;
+  font-size: 16px;
+  width: 100%;
+}
+
+.form-group {
+  width: 22rem;
+  display: flex;
+  flex-direction: column;
+  align-items: left;
+  padding: 0 1rem;
+}
+
+.cadastro-page .button {
+  width: 330px;
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  gap: 60px;
+  margin-bottom: 60px;
+}
+
+.cadastro-page .button-user-interno {
+  width: 330px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  grid-column: 1 / -1;
+}
+
+.form-wrapper {
+  display: flex;
+  flex-direction: column;
+  padding: 0 10rem;
+}
+
+@media (max-width: 1080px) {
+  .form-container {
+    grid-template-columns: repeat(2, 1fr);
+    justify-content: center;
+  }
+
+  .form-wrapper {
+    padding: 0;
+  }
+}
+
+@media (max-width: 800px) {
+  .form-container {
+    grid-template-columns: 1fr;
+  }
+
+  .cadastro-page .button {
+    gap: 20px;
+  }
+}

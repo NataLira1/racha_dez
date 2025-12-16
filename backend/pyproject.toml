@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "rachadez-backend"
+version = "0.1.0"
+description = ""
+authors = ["Winicius Silva <winiciusab12@gmail.com>"]
+readme = "README.md"
+packages = [
+    { include = "app" }
+]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+fastapi = {extras = ["standard"], version = "^0.115.8"}
+pydantic-settings = "^2.7.1"
+sqlmodel = "^0.0.22"
+pydantic = "^2.10.6"
+passlib = "^1.7.4"
+bcrypt = "^4.3.0"
+pytest = "^8.3.5"
+emails = "^0.6"
+pyjwt = "^2.10.1"
+psycopg2-binary = "^2.9.10"
+
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
