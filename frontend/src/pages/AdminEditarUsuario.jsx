@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import "./Cadastro.css";
 import Header from "./components/Header/Header";
 import MainContent from "./components/MainContent/MainContent";
-import { UserRoundSearch } from "lucide-react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import InputTemplateEdit from "./components/InputTemplate/InputTemplateEdit";
 import DefaultButton from "./components/Buttons/DefaultButton";
 import axios from "axios";
@@ -13,7 +12,6 @@ import ModalOneOption from "./components/Modal/ModalOneOption";
 
 function AdminEditarUsuario() {
   const { id } = useParams(); // Obtém o ID do usuário da URL
-  const navigate = useNavigate();
   const [usuario, setUsuario] = useState(null); // Estado para armazenar os dados do usuário
   const [errorMessage, setErrorMessage] = useState(""); // Estado para mensagens de erro
   const [isModalOpen, setIsModalOpen] = useState(false);

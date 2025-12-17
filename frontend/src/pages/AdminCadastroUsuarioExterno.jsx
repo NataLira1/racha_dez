@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import "./Cadastro.css";
 import DefaultButton from "./components/Buttons/DefaultButton";
 import InputTemplate from "./components/InputTemplate/InputTemplate";
