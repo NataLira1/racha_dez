@@ -73,7 +73,7 @@ def list_all_reservations(
         raise HTTPException(status_code=403, detail="Acesso negado. Somente administradores podem listar todas as reservas.")
     
     try:
-        reservations = db.query(Reservation).all()
+        reservations = db.exec(select(Reservation)).all()
         response = []
         for r in reservations:
             participants = get_participants_by_reservation_id(db,r.id)
@@ -101,7 +101,7 @@ def list_user_reservations(
         raise HTTPException(status_code=403, detail="Acesso negado. Você só pode ver suas próprias reservas ou ser um administrador.")
 
     try:
-        reservations = db.query(Reservation).filter(Reservation.responsible_user_id == user_id).all()
+        reservations = db.exec(select(Reservation).filter(Reservation.responsible_user_id == user_id)).all()
         response = []
         for r in reservations:
             participants = get_participants_by_reservation_id(db,r.id)
@@ -131,14 +131,16 @@ def get_reservation(
         raise HTTPException(status_code=403, detail="Acesso negado. Você só pode ver suas próprias reservas ou ser um administrador.")
     
     try:
-        reservation = db.query(Reservation).filter(Reservation.id == reservation_id).all()
+        reservation = db.exec(select(Reservation).filter(Reservation.id == reservation_id)).first()
+        if not reservation:
+            raise HTTPException(status_code=404, detail="Reserva não encontrada.")
         participants = get_participants_by_reservation_id(db,reservation_id)
         reservation_response = ReservationResponse(
-                id = reservation[0].id,
-                responsible_user_id = reservation[0].responsible_user_id,
-                arena_id = reservation[0].arena_id,
-                start_date = reservation[0].start_date,
-                end_date = reservation[0].end_date,
+                id = reservation.id,
+                responsible_user_id = reservation.responsible_user_id,
+                arena_id = reservation.arena_id,
+                start_date = reservation.start_date,
+                end_date = reservation.end_date,
                 participants = participants,
         )
         return reservation_response

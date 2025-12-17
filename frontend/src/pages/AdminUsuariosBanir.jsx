@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import DeleteButton from "./components/Buttons/DeleteButton";
 import Header from "./components/Header/Header";
 import MainContent from "./components/MainContent/MainContent";
