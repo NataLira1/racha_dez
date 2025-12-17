@@ -1,5 +1,4 @@
 from datetime import datetime
-import sys
 from sqlmodel import Session, select
 import uuid
 from fastapi import Depends, HTTPException
@@ -13,74 +12,67 @@ from app.api.models.arena import Arena
     
 def create_reservation(session: SessionDep, reservation_data: ReservationCreate, user: User):
     
-    try:
-        # Buscar usuários participantes
-        lista_de_usuarios = []
-        for user_uuid in reservation_data.participants:
-            usuario = session.exec(select(User).filter(User.id == user_uuid)).first()
-            if usuario:
-                lista_de_usuarios.append(usuario)
-            
-        # Criar a reserva
-        reservation = Reservation(
-            responsible_user_id=reservation_data.responsible_user_id,
-            arena_id=reservation_data.arena_id,
-            start_date=reservation_data.start_date,
-            end_date=reservation_data.end_date,
-            participants=lista_de_usuarios,
-        )
+    # Buscar usuários participantes
+    lista_de_usuarios = []
+    for user_uuid in reservation_data.participants:
+        usuario = session.exec(select(User).filter(User.id == user_uuid)).first()
+        if usuario:
+            lista_de_usuarios.append(usuario)
         
-        arena = session.get(Arena, reservation.arena_id)
-        user_owner = session.get(User, reservation.responsible_user_id)
-        
-        
-        
-        if not arena:
-            raise HTTPException(status_code=400, detail="Arena inválida ou inexistente.")
-        
-        if not verify_end_date(reservation.start_date, reservation.end_date):
-            raise HTTPException(status_code=400, detail="Horario de inicio e fim Invalidos")
-        
-        if arena.type in ["BEACH_TENNIS", "TÊNIS"]:
-            if not verify_weekly_sports(reservation, arena, user_owner):
-                raise HTTPException(status_code=400, detail="Reserva ilegal para este esporte.")
-        else:
-            if not verify_monthly_sports(reservation, arena, user_owner):
-                raise HTTPException(status_code=400, detail="Reserva ilegal para este esporte.")
-        
-        if not is_valid_sports_schedule(reservation, arena):
-            raise HTTPException(status_code=400, detail="Reserva ilegal, horário ou data não permitido.")
-        
-        if not user.is_admin:
-            if not is_reservation_available(session, reservation.arena_id, reservation.end_date, reservation.start_date):
-                raise HTTPException(status_code=400, detail="Já existe uma reserva nesse horário.")
-            verify_last_reservation(arena, user_owner, reservation.start_date)
-            
-                
-        else:
-            old_reservation = session.query(Reservation).filter(Reservation.arena_id == reservation.arena_id,Reservation.start_date < reservation.end_date, Reservation.end_date > reservation.start_date).first()
-            if old_reservation != None:
-                session.delete(old_reservation)
-                
-        
-        
-        
-        # Adicionar e persistir a reserva
-        session.add_all([reservation, user])
-        session.commit()
-        session.refresh(reservation)
-        session.refresh(user)
-        
-        return reservation
+    # Criar a reserva
+    reservation = Reservation(
+        responsible_user_id=reservation_data.responsible_user_id,
+        arena_id=reservation_data.arena_id,
+        start_date=reservation_data.start_date,
+        end_date=reservation_data.end_date,
+        participants=lista_de_usuarios,
+    )
     
-    except HTTPException as e:
-        session.rollback()
-        raise HTTPException(status_code=500, detail=f"Erro ao criar reserva: {str(e)}")
+    arena = session.get(Arena, reservation.arena_id)
+    user_owner = session.get(User, reservation.responsible_user_id)
     
-
+    
+    
+    if not arena:
+        raise HTTPException(status_code=400, detail="Arena inválida ou inexistente.")
+    
+    if not verify_end_date(reservation.start_date, reservation.end_date):
+        raise HTTPException(status_code=400, detail="Horário de início e fim inválidos.")
+    
+    if arena.type in ["BEACH_TENNIS", "TÊNIS"]:
+        if not verify_weekly_sports(reservation, arena, user_owner):
+            raise HTTPException(status_code=400, detail="Reserva ilegal para este esporte.")
+    else:
+        if not verify_monthly_sports(reservation, arena, user_owner):
+            raise HTTPException(status_code=400, detail="Reserva ilegal para este esporte.")
+    
+    if not is_valid_sports_schedule(reservation, arena):
+        raise HTTPException(status_code=400, detail="Reserva ilegal, horário ou data não permitido.")
+    
+    if not user.is_admin:
+        if not is_reservation_available(session, reservation.arena_id, reservation.end_date, reservation.start_date):
+            raise HTTPException(status_code=400, detail="Já existe uma reserva nesse horário.")
+        verify_last_reservation(arena, user_owner, reservation.start_date)
+        
+            
+    else:
+        old_reservation = session.exec(select(Reservation).filter(Reservation.arena_id == reservation.arena_id, Reservation.start_date < reservation.end_date, Reservation.end_date > reservation.start_date)).first()
+        if old_reservation is not None:
+            session.delete(old_reservation)
+            
+    
+    
+    
+    # Adicionar e persistir a reserva
+    session.add_all([reservation, user])
+    session.commit()
+    session.refresh(reservation)
+    session.refresh(user)
+    
+    return reservation
 
 def update_reservation(session: Session, reservation_id: int, updated_data: ReservationUpdate, user: User):
-    reservation = session.query(Reservation).filter(Reservation.id == reservation_id).first()
+    reservation = session.exec(select(Reservation).filter(Reservation.id == reservation_id)).first()
 
     # Modificação: Permitir que administradores editem reservas
     if not user.is_admin and reservation.responsible_user_id != user.id:
@@ -118,16 +110,18 @@ def update_reservation(session: Session, reservation_id: int, updated_data: Rese
         if is_reservation_available(session, reservation.arena_id, reservation.end_date, reservation.start_date):
             raise HTTPException(status_code=400, detail="Este horário já está sendo ocupado por outra reserva.")
     else:
-        old_reservation = session.query(Reservation).filter(Reservation.arena_id == reservation.arena_id,
+        old_reservation = session.exec(select(Reservation).filter(Reservation.arena_id == reservation.arena_id,
                                                             Reservation.start_date < reservation_update["end_date"],
-                                                            Reservation.end_date > reservation_update["start_date"]).first()
-        if old_reservation != None:
+                                                            Reservation.end_date > reservation_update["start_date"])).first()
+        if old_reservation is not None:
             session.delete(old_reservation)
 
-    if not verify_weekly_sports(reservation, arena, user_owner): # use user_owner to avoid conflict.
-        raise HTTPException(status_code=400, detail="Este horário não é válido para reservas semanais.")
-    elif not verify_monthly_sports(reservation, arena, user_owner):
-        raise HTTPException(status_code=400, detail="Este horário não é válido para reservas mensais.")
+    if arena.type in ["BEACH_TENNIS", "TÊNIS"]:
+        if not verify_weekly_sports(reservation, arena, user_owner):
+            raise HTTPException(status_code=400, detail="Este horário não é válido para reservas semanais.")
+    else:
+        if not verify_monthly_sports(reservation, arena, user_owner):
+            raise HTTPException(status_code=400, detail="Este horário não é válido para reservas mensais.")
 
     session.add(reservation)
     session.commit()
@@ -139,8 +133,8 @@ def update_reservation(session: Session, reservation_id: int, updated_data: Rese
 def delete_reservation(db: Session, reservation_id: uuid.UUID, user_id: uuid.UUID, user: User) -> str:
     
     try:
-        reservation = db.query(Reservation).filter(Reservation.id == reservation_id).first()
-        user_owner = db.query(User).filter(User.id == user_id).first()
+        reservation = db.exec(select(Reservation).filter(Reservation.id == reservation_id)).first()
+        user_owner = db.exec(select(User).filter(User.id == user_id)).first()
         arena_id = reservation.arena_id
         arena = db.get(Arena, arena_id)
         

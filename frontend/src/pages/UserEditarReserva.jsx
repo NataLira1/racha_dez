@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import "./CadastrarReserva.css";
 import TrashIcon from "./components/TrashIcon/TrashIcon";
 import DateTimePicker from "./components/DateTimePicker/DateTimePicker";
@@ -73,30 +73,20 @@ const UserEditarReserva = () => {
   const [ufcgParticipantInputs, setUfcgParticipantInputs] = useState([]);
   const [externalParticipantInputs, setExternalParticipantInputs] = useState([]);
 
-  const handleEditarClick = () => {
-    const horarioAgendado = false;
-    const horarioIndisponivel = false;
-    const credenciaisInvalidas = false;
-
-    if (horarioAgendado) {
-      setModalType("sobrescrever-horario");
-    } else if (horarioIndisponivel) {
-      setModalType("horario-indisponivel");
-    } else if (credenciaisInvalidas) {
-      setModalType("credenciais-invalidas");
-    } else {
-      setModalType("confirmar-cadastro");
-    }
-
-    setIsModalOpen(true);
-  };
-
   const handleEditarReserva = () => {
     setModalType("reserva-realizada");
   };
 
   const handleDateChange = (date) => {
     setReservaData((prev) => ({ ...prev, dataHora: date }));
+  };
+
+  const handleParticipantChange = (index, type, field, value) => {
+    setReservaData((prev) => {
+      const updated = { ...prev };
+      updated[type][index][field] = value;
+      return updated;
+    });
   };
 
   const removeParticipant = (index, type) => {
