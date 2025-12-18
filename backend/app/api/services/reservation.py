@@ -13,6 +13,22 @@ from app.api.models.arena import Arena
 def create_reservation(session: SessionDep, reservation_data: ReservationCreate, user: User):
     
     # Buscar usuários participantes
+    """
+    Create a new reservation, persist it, and return the created Reservation.
+    
+    Builds the participant list from IDs in reservation_data, validates arena existence, date ranges, sport-specific scheduling rules, and overall schedule availability. For non-admin users, ensures the time slot is free and verifies the user's last reservation constraints; for admin users, removes any overlapping existing reservation for the same arena. Persists the reservation and refreshes related objects before returning.
+    
+    Parameters:
+        session (SessionDep): Database session used for queries and persistence.
+        reservation_data (ReservationCreate): Data required to create the reservation, including responsible_user_id, arena_id, start_date, end_date, and participant IDs.
+        user (User): The authenticated user performing the operation (used to determine admin privileges).
+    
+    Returns:
+        Reservation: The created and persisted Reservation instance.
+    
+    Raises:
+        HTTPException: With status 400 for invalid arena, invalid start/end dates, illegal sport-specific schedule, or when the time slot is already taken; 400 when cancellation/validation rules fail; may also raise other HTTPException statuses for authorization or not-found conditions triggered by validations.
+    """
     lista_de_usuarios = []
     for user_uuid in reservation_data.participants:
         usuario = session.exec(select(User).filter(User.id == user_uuid)).first()
@@ -72,6 +88,22 @@ def create_reservation(session: SessionDep, reservation_data: ReservationCreate,
     return reservation
 
 def update_reservation(session: Session, reservation_id: int, updated_data: ReservationUpdate, user: User):
+    """
+    Update an existing reservation's dates and participants, applying authorization and schedule validations.
+    
+    Parameters:
+        reservation_id (int): ID of the reservation to update.
+        updated_data (ReservationUpdate): Fields to update (start_date, end_date, participants).
+        user (User): Authenticated user performing the update; admins may edit any reservation.
+    
+    Returns:
+        Reservation: The updated reservation object.
+    
+    Raises:
+        HTTPException 404: If the reservation does not exist ("Reserva não encontrada.").
+        HTTPException 403: If the requester is not an admin and is not the reservation owner ("Usuario autenticado incorreto").
+        HTTPException 400: If start/end dates are invalid ("Horario de inicio e fim Invalidos"), if the time slot is occupied for non-admin users ("Este horário já está sendo ocupado por outra reserva."), if the schedule is not allowed for the arena type ("Horário inválido para este tipo de arena."), or if the weekly/monthly sport-specific validation fails ("Este horário não é válido para reservas semanais." / "Este horário não é válido para reservas mensais.").
+    """
     reservation = session.exec(select(Reservation).filter(Reservation.id == reservation_id)).first()
 
     # Modificação: Permitir que administradores editem reservas
@@ -132,6 +164,24 @@ def update_reservation(session: Session, reservation_id: int, updated_data: Rese
 
 def delete_reservation(db: Session, reservation_id: uuid.UUID, user_id: uuid.UUID, user: User) -> str:
     
+    """
+    Cancel a reservation, delete it from the database, and clear the owner's last-reservation tracker for the relevant schedule window.
+    
+    Parameters:
+        reservation_id (uuid.UUID): Identifier of the reservation to cancel.
+        user_id (uuid.UUID): Identifier of the reservation owner (responsible user).
+        user (User): Authenticated user requesting the cancellation; used for authorization checks.
+    
+    Returns:
+        str: Confirmation message "Reserva cancelada com sucesso." on successful cancellation.
+    
+    Raises:
+        HTTPException: 404 if the reservation is not found ("Reserva não encontrada.").
+        HTTPException: 403 if the requester is neither the reservation owner nor an admin ("Você não tem permissão para cancelar esta reserva.").
+        HTTPException: 404 if the associated arena is not found ("Arena não encontrada.").
+        HTTPException: 400 if the reservation has already started ("Não é possível cancelar uma reserva que já iniciou.").
+        HTTPException: 500 for internal server errors with the original error text appended.
+    """
     try:
         reservation = db.exec(select(Reservation).filter(Reservation.id == reservation_id)).first()
         user_owner = db.exec(select(User).filter(User.id == user_id)).first()

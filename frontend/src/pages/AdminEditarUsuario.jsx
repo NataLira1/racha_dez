@@ -10,6 +10,13 @@ import ModalLoading from "./components/Modal/ModalLoading";
 import ModalOneOption from "./components/Modal/ModalOneOption";
 
 
+/**
+ * Render the admin interface for viewing and editing a user's details identified by the URL ID.
+ *
+ * Fetches user data on mount, allows inline editing of fields, performs a PATCH to update the user,
+ * and displays modals for loading, success, and error states.
+ * @returns {JSX.Element} The React element for the admin user edit page.
+ */
 function AdminEditarUsuario() {
   const { id } = useParams(); // Obtém o ID do usuário da URL
   const [usuario, setUsuario] = useState(null); // Estado para armazenar os dados do usuário
