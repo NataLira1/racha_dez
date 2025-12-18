@@ -69,6 +69,16 @@ def list_all_reservations(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    """
+    Retrieve all reservations along with their participants (admin only).
+    
+    Returns:
+        list[ReservationResponse]: A list of reservation representations containing id, responsible_user_id, arena_id, start_date, end_date, and participants.
+    
+    Raises:
+        HTTPException: 403 if the requesting user is not an administrator.
+        HTTPException: 500 if an unexpected error occurs while fetching or assembling reservations.
+    """
     if not current_user.is_admin:
         raise HTTPException(status_code=403, detail="Acesso negado. Somente administradores podem listar todas as reservas.")
     
@@ -97,6 +107,19 @@ def list_user_reservations(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    """
+    Retrieve all reservations for a specific user, including each reservation's participants.
+    
+    Parameters:
+    	user_id (uuid.UUID): ID of the user whose reservations to retrieve.
+    
+    Returns:
+    	list[ReservationResponse]: A list of ReservationResponse objects containing reservation fields and their participants.
+    
+    Raises:
+    	HTTPException: Raises a 403 error if the requester is not the specified user and not an admin.
+    	HTTPException: Raises a 500 error if an unexpected error occurs while querying or building the response.
+    """
     if current_user.id != user_id and not current_user.is_admin:
         raise HTTPException(status_code=403, detail="Acesso negado. Você só pode ver suas próprias reservas ou ser um administrador.")
 
@@ -127,6 +150,17 @@ def get_reservation(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    """
+    Retrieve a single reservation and its participants if the requester is authorized.
+    
+    Raises:
+        HTTPException: 403 if the requester is not the reservation owner or an admin.
+        HTTPException: 404 if no reservation exists with the given reservation_id.
+        HTTPException: 500 on unexpected errors while fetching the reservation.
+    
+    Returns:
+        ReservationResponse: Reservation details including id, responsible_user_id, arena_id, start_date, end_date, and participants.
+    """
     if current_user.id != user_id and not current_user.is_admin:
         raise HTTPException(status_code=403, detail="Acesso negado. Você só pode ver suas próprias reservas ou ser um administrador.")
     
